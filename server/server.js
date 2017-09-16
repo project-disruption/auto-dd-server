@@ -15,8 +15,22 @@ if (config.privateKeyPath && !config.privateKey) {
 const xeroClient = new xero.PrivateApplication(config)
 
 app.get('/invoices', (req, res) => {
-  xeroClient.core.invoices.getInvoices()
+  xeroClient.core.invoices.getInvoices({
+    where: 'Type=="ACCREC"',
+    order: 'Date'
+  })
     .then((invoices) => {
+      invoices = invoices.sort((invoice1, invoice2) => {
+        const date1 = moment(invoice1.Date) 
+        const date2 = moment(invoice2.Date)
+        if(date1.isBefore(date2)) {
+          return -1
+        }
+        if (date1.isAfter(date2)) {
+          return 1
+        }
+        return 0
+      })
       res.send(invoices)
     })
 })
