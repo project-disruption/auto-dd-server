@@ -36,22 +36,31 @@ app.get('/invoices', (req, res) => {
 })
 
 
-// In this block I'm trying to split out a P&L report by reporting line
+// Split out P&L by reporting line
+
 app.get('/profitandlossbyline', (req, res) => {
   const fromDate = req.query.fromDate
   const toDate = req.query.toDate
   const line = req.query.line
-  xeroClient.core.reports.generateReport({
-    id: 'ProfitAndLoss',
-    params: {
-      fromDate, toDate
-    }
-  })
-  .then(report) => {
-    report === report.ReportID;
-    console.log("User Name:",report.ReportID);
-    res.send(report)
+  let promises = []
+  var data = []
+
+  for (i = moment(toDate); moment(fromDate) < moment(i); i = moment(i).subtract(1, 'months').format('YYYY-MM-DD')) {
+    promises.push(getReport(moment(i).subtract(1, 'months').format('YYYY-MM-DD'), moment(i).format('YYYY-MM-DD')))
+    console.log("Retrieving Report", moment(i).format('YYYY-MM-DD'))
   }
+
+
+  Promise.all(promises)
+    .then((report) => {
+      console.log("Number of reports:", report.length)
+      for (var i = 0, len = report.length; i < len; i++) {
+        data.push( { "date" : String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value),
+        "value" : Number(report[i].Rows.find((row) => row.Title === line).Rows.find((row) => row.RowType === 'SummaryRow').Cells[1].Value)
+      } )
+    }
+      res.send(data)
+    })
 })
 
 function getReport(fromDate, toDate) {
