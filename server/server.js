@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 const PORT = process.env.PORT || 3001
 const moment = require('moment')
+const _ = require('lodash')
 
 const xero = require('xero-node')
 const fs = require('fs')
@@ -55,13 +56,41 @@ app.get('/profitandlossbyline', (req, res) => {
     .then((report) => {
       console.log("Number of reports:", report.length)
       for (var i = 0, len = report.length; i < len; i++) {
-        data.push( { "date" : String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value),
-        "value" : Number(report[i].Rows.find((row) => row.Title === line).Rows.find((row) => row.RowType === 'SummaryRow').Cells[1].Value)
-      } )
+        const rows = processRows(report[i].Rows)
+        const result = {
+          date: String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value),
+          rows: rows
+        }
+        if (line) {
+          Object.keys(rows).map(key => {
+            if (key === line) {
+              result.value = rows[key]
+            }
+          })
+        }
+        data.push(result)
     }
       res.send(data)
     })
 })
+
+function processRows(rows) {
+  return _.flatten(rows.map(row => {
+    if (row.Cells) {
+      const values = row.Cells.map(cell => {
+        return cell.Value
+      })
+      if (values.length > 0) {
+        return {
+          [values[0]]: values[1]
+        }
+      }
+    }
+    if (row.Rows) {
+      return processRows(row.Rows)
+    }
+  })).reduce((prev, curr) => Object.assign({}, prev, curr), {})
+}
 
 function getReport(fromDate, toDate) {
   return xeroClient.core.reports.generateReport({
