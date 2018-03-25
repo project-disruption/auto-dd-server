@@ -47,7 +47,7 @@ app.get('/profitandlossbyline', (req, res) => {
   var data = []
 
   for (i = moment(toDate); moment(fromDate) < moment(i); i = moment(i).subtract(1, 'months').format('YYYY-MM-DD')) {
-    promises.push(getReport(moment(i).subtract(1, 'months').format('YYYY-MM-DD'), moment(i).format('YYYY-MM-DD')))
+    promises.push(getReport(moment(i).subtract(1, 'months').endOf('month').format('YYYY-MM-DD'), moment(i).endOf('month').format('YYYY-MM-DD')))
     console.log("Retrieving Report", moment(i).format('YYYY-MM-DD'))
   }
 
@@ -57,15 +57,12 @@ app.get('/profitandlossbyline', (req, res) => {
       console.log("Number of reports:", report.length)
       for (var i = 0, len = report.length; i < len; i++) {
         const rows = processRows(report[i].Rows)
-        const result = {
-          date: String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value),
-          rows: rows
-        }
+        const result = Object.assign({}, {
+          date: String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value)
+        }, rows)
         if (line) {
           Object.keys(rows).map(key => {
-            if (key === line) {
-              result.value = rows[key]
-            }
+                result.value = rows[key]
           })
         }
         data.push(result)
@@ -81,8 +78,9 @@ function processRows(rows) {
         return cell.Value
       })
       if (values.length > 0) {
+        const value = Number(values[1])
         return {
-          [values[0]]: values[1]
+          [values[0]]: isNaN(value) ? values[1] : value
         }
       }
     }
