@@ -1,16 +1,18 @@
 const express = require('express')
 const app = express()
-const PORT = process.env.PORT || 3001
 const moment = require('moment')
 const _ = require('lodash')
 const {getInvoices, getReport, getAccounts, types} = require('./xero')
 
 app.get('/invoices', (req, res) => {
   getInvoices(`Type=="${types.accountsReceivable}"`, 'Date').then(invoices => {
-    invoices = invoices.sort((invoice1, invoice2) => moment(invoice1.Date).diff(invoice2.Date))
-    res.send(invoices)
+    res.send(sortByDate(invoices, d => d.Date))
   })
 })
+
+function sortByDate (dates, field = d => d) {
+  return dates.sort((a, b) => moment(field(a)).diff(field(b)))
+}
 
 // Split out P&L by reporting line
 app.get('/profitandlossbyline', (req, res) => {
@@ -46,8 +48,7 @@ app.get('/profitandlossbyline', (req, res) => {
           rows: rows
         }
       })
-      .sort((reportA, reportB) => moment(reportA.date).diff(moment(reportB.date)))
-    res.send(data)
+    res.send(sortByDate(data, d => d.date))
   })
 })
 
@@ -87,6 +88,7 @@ app.get('/accounts', (req, res) => {
   getAccounts('BANK').then(result => res.json(result))
 })
 
-app.listen(PORT, () => {
-  console.log(`Now listening on port ${PORT}`)
-})
+module.exports = {
+  sortByDate,
+  app
+}
