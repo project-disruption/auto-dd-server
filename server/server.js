@@ -47,7 +47,7 @@ app.get('/profitandlossbyline', (req, res) => {
   var data = []
 
   for (i = moment(toDate); moment(fromDate) < moment(i); i = moment(i).subtract(1, 'months').format('YYYY-MM-DD')) {
-    promises.push(getReport(moment(i).subtract(1, 'months').endOf('month').format('YYYY-MM-DD'), moment(i).endOf('month').format('YYYY-MM-DD')))
+    promises.push(getReport('ProfitAndLoss', moment(i).subtract(1, 'months').endOf('month').format('YYYY-MM-DD'), moment(i).endOf('month').format('YYYY-MM-DD')))
     console.log("Retrieving Report", moment(i).format('YYYY-MM-DD'))
   }
 
@@ -60,7 +60,7 @@ app.get('/profitandlossbyline', (req, res) => {
         const result = Object.assign({}, {
           date: String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value)
         }, rows)
-        if (line) {
+        if (line && line.length > 0) {
           Object.keys(rows).map(key => {
                 result.value = rows[key]
           })
@@ -90,9 +90,9 @@ function processRows(rows) {
   })).reduce((prev, curr) => Object.assign({}, prev, curr), {})
 }
 
-function getReport(fromDate, toDate) {
+function getReport(id, fromDate, toDate) {
   return xeroClient.core.reports.generateReport({
-    id: 'ProfitAndLoss',
+    id: id,
     params: {
       fromDate, toDate
     }
