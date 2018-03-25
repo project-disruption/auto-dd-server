@@ -60,7 +60,7 @@ app.get('/profitandlossbyline', (req, res) => {
         const result = Object.assign({}, {
           date: String(report[i].Rows.find((row) => row.RowType === 'Header').Cells[1].Value)
         }, rows)
-        if (line && line.length > 0) {
+        if (line) {
           Object.keys(rows).map(key => {
                 result.value = rows[key]
           })
