@@ -67,6 +67,7 @@ app.get('/profitandlossbyline', (req, res) => {
         }
         data.push(result)
     }
+      data = data.sort((reportA, reportB) => moment(reportA.date).diff(moment(reportB.date)))
       res.send(data)
     })
 })
